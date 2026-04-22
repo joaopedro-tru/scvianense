@@ -27,31 +27,30 @@ export default function App() {
 
   const storageKey = jogo ? `scv_bilhetes_${jogo.id}` : null;
 
+  // Carrega dados do localStorage quando se selecciona um jogo
   useEffect(() => {
     if (!storageKey) return;
-    (async () => {
-      try {
-        const stored = await window.storage.get(storageKey);
-        if (stored) {
-          const d = JSON.parse(stored.value);
-          setSocios(d.socios || {});
-          setHistorico(d.historico || []);
-        } else {
-          setSocios({});
-          setHistorico([]);
-        }
-      } catch {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const d = JSON.parse(stored);
+        setSocios(d.socios || {});
+        setHistorico(d.historico || []);
+      } else {
         setSocios({});
         setHistorico([]);
       }
-    })();
+    } catch {
+      setSocios({});
+      setHistorico([]);
+    }
     setResultado(null);
     setInput("");
   }, [storageKey]);
 
-  const save = async (s, h) => {
+  const save = (s, h) => {
     if (!storageKey) return;
-    try { await window.storage.set(storageKey, JSON.stringify({ socios: s, historico: h })); } catch {}
+    localStorage.setItem(storageKey, JSON.stringify({ socios: s, historico: h }));
   };
 
   const handleSubmit = () => {
@@ -71,11 +70,11 @@ export default function App() {
     setInput("");
   };
 
-  const handleClear = async () => {
+  const handleClear = () => {
     if (!storageKey) return;
     if (window.confirm("Apagar todos os registos deste jogo?")) {
       setSocios({}); setHistorico([]); setResultado(null);
-      await window.storage.set(storageKey, JSON.stringify({ socios: {}, historico: [] }));
+      localStorage.setItem(storageKey, JSON.stringify({ socios: {}, historico: [] }));
     }
   };
 
