@@ -17,6 +17,7 @@ const db = getFirestore(firebaseApp);
 const LOCAIS = ["Sede do SCV", "Lojinha do SCV"];
 
 const JOGOS = [
+  { id: "j0", adversario: "Leça FC", data: "26 Abril", hora: "16:00", fora: true },
   { id: "j1", adversario: "GD Bragança",      data: "3 Maio",  hora: "16:00" },
   { id: "j2", adversario: "Leça FC",           data: "17 Maio", hora: "17:00" },
   { id: "j3", adversario: "Rebordosa Atl. C.", data: "31 Maio", hora: "17:00" },
@@ -135,7 +136,7 @@ export default function App() {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: "bold", color: "#c8e6a0", letterSpacing: 1 }}>Controlo de Bilhetes</div>
           <div style={{ fontSize: 11, color: "#7a9a6a", letterSpacing: 2, textTransform: "uppercase", marginTop: 2 }}>
-            {jogo ? `vs ${jogo.adversario} · ${jogo.data} · ${jogo.hora}` : "Sport Clube Vianense"}
+            {jogo ? (jogo.fora ? `${jogo.adversario} vs SCV · ${jogo.data} · ${jogo.hora}` : `vs ${jogo.adversario} · ${jogo.data} · ${jogo.hora}`) : "Sport Clube Vianense"}
           </div>
         </div>
         {jogo && (
@@ -170,9 +171,9 @@ export default function App() {
                   <div style={{ fontSize: 10, color: "#7a9a6a", lineHeight: 1.4 }}>{j.data.split(" ")[1]}</div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: "bold", color: "#c8e6a0" }}>SC Vianense SAD</div>
-                  <div style={{ fontSize: 13, color: "#7a9a6a" }}>vs {j.adversario}</div>
-                  <div style={{ fontSize: 11, color: "#4a6a4a", marginTop: 3 }}>{j.hora} · Campeonato de Portugal</div>
+                  <div style={{ fontSize: 15, fontWeight: "bold", color: "#c8e6a0" }}>{j.fora ? j.adversario : "SC Vianense SAD"}</div>
+                  <div style={{ fontSize: 13, color: "#7a9a6a" }}>vs {j.fora ? "SC Vianense SAD" : j.adversario}</div>
+                  <div style={{ fontSize: 11, color: "#4a6a4a", marginTop: 3 }}>{j.hora} · Campeonato de Portugal{j.fora ? " · Fora" : ""}</div>
                 </div>
                 <div style={{ color: "#4a8a2a", fontSize: 22, lineHeight: 1 }}>›</div>
               </button>
