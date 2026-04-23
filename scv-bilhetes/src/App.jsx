@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDEG0WMa1hJHL9IPb2_oJdekFuk482ZwWk",
   authDomain: "scv-bilhetes.firebaseapp.com",
@@ -40,13 +39,16 @@ export default function App() {
   const [resultado, setResultado] = useState(null);
   const [tab, setTab] = useState("venda");
   const [loading, setLoading] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(null); // número de sócio a remover
 
-  // Subscreve ao Firestore em tempo real quando se selecciona um jogo
+  const storageKey = jogo ? jogo.id : null;
+
   useEffect(() => {
     if (!jogo) return;
     setLoading(true);
     setResultado(null);
     setInput("");
+    setConfirmRemove(null);
 
     const ref = doc(db, "jogos", jogo.id);
     const unsub = onSnapshot(ref, (snap) => {
@@ -73,7 +75,6 @@ export default function App() {
     const num = input.trim().replace(/\D/g, "");
     if (!num || !jogo) return;
 
-    // Lê o estado mais recente directamente do Firestore antes de registar
     const ref = doc(db, "jogos", jogo.id);
     const snap = await getDoc(ref);
     const dadosActuais = snap.exists() ? snap.data() : { socios: {}, historico: [] };
@@ -88,6 +89,20 @@ export default function App() {
       setResultado({ tipo: "ok", socio: num, local, timestamp: agora });
     }
     setInput("");
+  };
+
+  const handleRemove = async (num) => {
+    const ref = doc(db, "jogos", jogo.id);
+    const snap = await getDoc(ref);
+    const dadosActuais = snap.exists() ? snap.data() : { socios: {}, historico: [] };
+
+    const novosSocios = { ...dadosActuais.socios };
+    delete novosSocios[num];
+
+    const novoHist = (dadosActuais.historico || []).filter((h) => h.socio !== num);
+    await save(novosSocios, novoHist);
+    setConfirmRemove(null);
+    if (resultado?.socio === num) setResultado(null);
   };
 
   const handleClear = async () => {
@@ -171,7 +186,7 @@ export default function App() {
         <div>
           {/* Mudar jogo */}
           <div style={{ background: "#0c150c", borderBottom: "1px solid #1a2e1a", padding: "6px 20px" }}>
-            <button onClick={() => { setJogo(null); setResultado(null); setInput(""); }} style={{
+            <button onClick={() => { setJogo(null); setResultado(null); setInput(""); setConfirmRemove(null); }} style={{
               background: "transparent", border: "none", color: "#4a6a4a", cursor: "pointer",
               fontSize: 12, fontFamily: "inherit", letterSpacing: 1, textTransform: "uppercase", padding: "4px 0",
             }}>← Mudar jogo</button>
@@ -180,7 +195,7 @@ export default function App() {
           {/* Tabs */}
           <div style={{ display: "flex", borderBottom: "1px solid #1e3a1e", background: "#0d160d" }}>
             {["venda", "historico"].map((t) => (
-              <button key={t} onClick={() => setTab(t)} style={{
+              <button key={t} onClick={() => { setTab(t); setConfirmRemove(null); }} style={{
                 padding: "12px 28px", background: tab === t ? "#1a2e1a" : "transparent",
                 border: "none", borderBottom: tab === t ? "2px solid #4a8a2a" : "2px solid transparent",
                 color: tab === t ? "#c8e6a0" : "#5a7a5a", cursor: "pointer", fontSize: 13,
@@ -239,7 +254,7 @@ export default function App() {
                       </label>
                       <input
                         type="text" inputMode="numeric" value={input}
-                        onChange={(e) => { setInput(e.target.value); setResultado(null); }}
+                        onChange={(e) => { setInput(e.target.value); setResultado(null); setConfirmRemove(null); }}
                         onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                         placeholder="Ex: 1234"
                         autoFocus
@@ -285,6 +300,25 @@ export default function App() {
                             em <strong style={{ color: "#db8a8a" }}>{resultado.local}</strong><br />
                             no dia <strong style={{ color: "#db8a8a" }}>{fmt(resultado.timestamp).data}</strong> às <strong style={{ color: "#db8a8a" }}>{fmt(resultado.timestamp).hora}</strong>
                           </div>
+                          {/* Botão de remover no resultado de duplicado */}
+                          {confirmRemove === resultado.socio ? (
+                            <div style={{ marginTop: 16, display: "flex", gap: 8, justifyContent: "center" }}>
+                              <button onClick={() => handleRemove(resultado.socio)} style={{
+                                padding: "8px 20px", background: "#5a1a1a", border: "1px solid #9a2a2a",
+                                borderRadius: 6, color: "#db8a8a", cursor: "pointer", fontSize: 13, fontFamily: "inherit",
+                              }}>Confirmar remoção</button>
+                              <button onClick={() => setConfirmRemove(null)} style={{
+                                padding: "8px 20px", background: "transparent", border: "1px solid #3a5a3a",
+                                borderRadius: 6, color: "#5a7a5a", cursor: "pointer", fontSize: 13, fontFamily: "inherit",
+                              }}>Cancelar</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmRemove(resultado.socio)} style={{
+                              marginTop: 16, padding: "8px 20px", background: "transparent",
+                              border: "1px solid #5a2a2a", borderRadius: 6,
+                              color: "#9a5a5a", cursor: "pointer", fontSize: 13, fontFamily: "inherit",
+                            }}>Remover compra por engano</button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -310,21 +344,47 @@ export default function App() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {historico.map((h, i) => (
                         <div key={i} style={{
-                          background: "#111d11", border: "1px solid #1e3a1e", borderRadius: 8,
-                          padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
+                          background: confirmRemove === h.socio ? "#1f0d0d" : "#111d11",
+                          border: confirmRemove === h.socio ? "1px solid #7a1b1b" : "1px solid #1e3a1e",
+                          borderRadius: 8, padding: "12px 16px",
+                          transition: "all 0.2s",
                         }}>
-                          <div style={{
-                            width: 36, height: 36, background: "#1a2e1a", borderRadius: "50%",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 11, color: "#7a9a6a", fontWeight: "bold", flexShrink: 0,
-                          }}>#{h.socio}</div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, color: "#c8e6a0" }}>{h.local}</div>
-                            <div style={{ fontSize: 11, color: "#5a7a5a", marginTop: 2 }}>
-                              {fmt(h.timestamp).data} · {fmt(h.timestamp).hora}
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{
+                              width: 36, height: 36, background: "#1a2e1a", borderRadius: "50%",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 11, color: "#7a9a6a", fontWeight: "bold", flexShrink: 0,
+                            }}>#{h.socio}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 13, color: "#c8e6a0" }}>{h.local}</div>
+                              <div style={{ fontSize: 11, color: "#5a7a5a", marginTop: 2 }}>
+                                {fmt(h.timestamp).data} · {fmt(h.timestamp).hora}
+                              </div>
                             </div>
+                            {/* Botão remover */}
+                            {confirmRemove === h.socio ? (
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button onClick={() => handleRemove(h.socio)} style={{
+                                  padding: "5px 10px", background: "#5a1a1a", border: "1px solid #9a2a2a",
+                                  borderRadius: 5, color: "#db8a8a", cursor: "pointer", fontSize: 11, fontFamily: "inherit",
+                                }}>✓ Confirmar</button>
+                                <button onClick={() => setConfirmRemove(null)} style={{
+                                  padding: "5px 10px", background: "transparent", border: "1px solid #2a3a2a",
+                                  borderRadius: 5, color: "#5a7a5a", cursor: "pointer", fontSize: 11, fontFamily: "inherit",
+                                }}>✕</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirmRemove(h.socio)} style={{
+                                padding: "5px 10px", background: "transparent", border: "1px solid #2a1a1a",
+                                borderRadius: 5, color: "#5a3a3a", cursor: "pointer", fontSize: 11, fontFamily: "inherit",
+                                transition: "all 0.2s",
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = "#7a2a2a"; e.currentTarget.style.color = "#9a5a5a"; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a1a1a"; e.currentTarget.style.color = "#5a3a3a"; }}>
+                                Remover
+                              </button>
+                            )}
                           </div>
-                          <div style={{ width: 8, height: 8, background: "#4a8a2a", borderRadius: "50%" }} />
                         </div>
                       ))}
                     </div>
