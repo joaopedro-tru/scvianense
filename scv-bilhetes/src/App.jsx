@@ -17,10 +17,10 @@ const db = getFirestore(firebaseApp);
 const LOCAIS = ["Sede do SCV", "Lojinha do SCV"];
 
 const JOGOS = [
-  { id: "j0", adversario: "Leça FC", data: "26 Abril", hora: "16:00", fora: true },
-  { id: "j1", adversario: "GD Bragança",      data: "3 Maio",  hora: "16:00" },
-  { id: "j2", adversario: "Leça FC",           data: "17 Maio", hora: "17:00" },
-  { id: "j3", adversario: "Rebordosa Atl. C.", data: "31 Maio", hora: "17:00" },
+  { id: "j0", adversario: "Leça FC", data: "26 Abril", hora: "16:00", fora: true, iso: "2026-04-26T16:00:00" },
+  { id: "j1", adversario: "GD Bragança",      data: "3 Maio",  hora: "16:00", iso: "2026-05-03T16:00:00" },
+  { id: "j2", adversario: "Leça FC",           data: "17 Maio", hora: "17:00", iso: "2026-05-17T17:00:00" },
+  { id: "j3", adversario: "Rebordosa Atl. C.", data: "31 Maio", hora: "17:00", iso: "2026-05-31T17:00:00" },
 ];
 
 const fmt = (iso) => {
@@ -154,7 +154,7 @@ export default function App() {
             <div style={{ fontSize: 11, color: "#5a7a5a", letterSpacing: 3, textTransform: "uppercase" }}>Selecciona o jogo</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {JOGOS.map((j) => (
+            {JOGOS.filter((j) => new Date(j.iso) > new Date()).map((j) => (
               <button key={j.id} onClick={() => setJogo(j)} style={{
                 background: "#111d11", border: "1px solid #2d5a1b", borderRadius: 12,
                 padding: "20px 24px", color: "#e8e4d9", cursor: "pointer", textAlign: "left",
