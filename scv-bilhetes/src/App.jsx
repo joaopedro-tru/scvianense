@@ -17,10 +17,12 @@ const db = getFirestore(firebaseApp);
 const LOCAIS = ["Sede do SCV", "Lojinha do SCV"];
 
 const JOGOS = [
-  { id: "j0", adversario: "Leça FC", data: "26 Abril", hora: "16:00", fora: true, iso: "2026-04-26T16:00:00" },
-  { id: "j1", adversario: "GD Bragança",      data: "3 Maio",  hora: "16:00", iso: "2026-05-03T16:00:00" },
-  { id: "j2", adversario: "Leça FC",           data: "17 Maio", hora: "17:00", iso: "2026-05-17T17:00:00" },
-  { id: "j3", adversario: "Rebordosa Atl. C.", data: "31 Maio", hora: "17:00", iso: "2026-05-31T17:00:00" },
+  { id: "j0", adversario: "Leça FC",           data: "26 Abril", hora: "16:00", fora: true, iso: "2026-04-26T16:00:00" },
+  { id: "j1", adversario: "GD Bragança",       data: "3 Maio",   hora: "16:00", iso: "2026-05-03T16:00:00" },
+  { id: "j4", adversario: "Rebordosa Atl. C.", data: "10 Maio",  hora: "17:00", fora: true, iso: "2026-05-10T17:00:00" },
+  { id: "j2", adversario: "Leça FC",           data: "17 Maio",  hora: "17:00", iso: "2026-05-17T17:00:00" },
+  { id: "j5", adversario: "GD Bragança",       data: "23 Maio",  hora: "17:00", fora: true, iso: "2026-05-23T17:00:00" },
+  { id: "j3", adversario: "Rebordosa Atl. C.", data: "31 Maio",  hora: "17:00", iso: "2026-05-31T17:00:00" },
 ];
 
 const fmt = (iso) => {
